@@ -63,7 +63,7 @@ public class ApiController {
     }
     
     
-    @GetMapping(value = "/users/all/{groupUrl}")
+    @GetMapping(value = "/users/all/{conversationUrl}")
     public List<GroupMemberDTO> fetchAllUsersToAddInConversation(@PathVariable String groupUrl) {
     	GroupEntity groupEntity = groupService.findGroupByUrl(groupUrl);
     	int groupId = groupEntity.getId();
