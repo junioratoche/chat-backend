@@ -47,7 +47,27 @@ public class ApiController {
 
     @GetMapping(value = "/users/all/{groupUrl}")
     public List<GroupMemberDTO> fetchAllUsersNotInGroup(@PathVariable String groupUrl) {
-        int groupId = groupService.findGroupByUrl(groupUrl);
+    	System.out.println(groupUrl);
+    	GroupEntity groupEntity = groupService.findGroupByUrl(groupUrl);
+    	int groupId = groupEntity.getId();
+
+        GroupRoleKey groupRoleKey = new GroupRoleKey();
+        groupRoleKey.setGroupId(groupId);
+        List<GroupUser> groupUsers = groupUserJoinService.findAllByGroupId(groupId);
+        Object[] objects = groupUsers.stream().map(GroupUser::getUserId).toArray();
+        int[] ids = new int[objects.length];
+        for (int i = 0; i < objects.length; i++) {
+            ids[i] = (int) objects[i];
+        }
+        return userService.fetchAllUsers(ids);
+    }
+    
+    
+    @GetMapping(value = "/users/all/{groupUrl}")
+    public List<GroupMemberDTO> fetchAllUsersToAddInConversation(@PathVariable String groupUrl) {
+    	GroupEntity groupEntity = groupService.findGroupByUrl(groupUrl);
+    	int groupId = groupEntity.getId();
+
         GroupRoleKey groupRoleKey = new GroupRoleKey();
         groupRoleKey.setGroupId(groupId);
         List<GroupUser> groupUsers = groupUserJoinService.findAllByGroupId(groupId);
@@ -59,6 +79,7 @@ public class ApiController {
         return userService.fetchAllUsers(ids);
     }
 
+
     /**
      * Fetch all users in a conversation
      *
@@ -68,7 +89,10 @@ public class ApiController {
     @GetMapping(value = "/users/group/{groupUrl}")
     public List<GroupMemberDTO> fetchAllUsers(@PathVariable String groupUrl) {
         List<GroupMemberDTO> toSend = new ArrayList<>();
-        int id = groupService.findGroupByUrl(groupUrl);
+        GroupEntity groupEntity = groupService.findGroupByUrl(groupUrl);
+        int id = groupEntity.getId();
+
+
         Optional<GroupEntity> optionalGroupEntity = groupService.findById(id);
         if (optionalGroupEntity.isPresent()) {
             GroupEntity group = optionalGroupEntity.get();
@@ -88,7 +112,11 @@ public class ApiController {
      */
     @GetMapping(value = "/user/add/{userId}/{groupUrl}")
     public ResponseEntity<GroupMemberDTO> addUserToConversation(@PathVariable int userId, @PathVariable String groupUrl) {
-        int groupId = groupService.findGroupByUrl(groupUrl);
+             
+        GroupEntity groupEntity = groupService.findGroupByUrl(groupUrl);
+        int groupId = groupEntity.getId();
+
+        
         try {
 //            return ResponseEntity.ok().body(addedUsername + " has been added to " + groupService.getGroupName(groupUrl));
             return ResponseEntity.ok().body(groupService.addUserToConversation(userId, groupId));
@@ -126,7 +154,9 @@ public class ApiController {
         }
         String cookieToken = cookie.getValue();
         String username = jwtUtil.getUserNameFromJwtToken(cookieToken);
-        int groupId = groupService.findGroupByUrl(groupUrl);
+        GroupEntity groupEntity = groupService.findGroupByUrl(groupUrl);
+        int groupId = groupEntity.getId();
+
         String userToChange = userService.findUsernameById(userId);
         UserEntity userEntity = userService.findByNameOrEmail(username, username);
         if (userEntity != null) {

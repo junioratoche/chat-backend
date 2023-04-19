@@ -1,6 +1,7 @@
 package com.indra.chat.service;
 
 import com.indra.chat.controller.WsFileController;
+import com.indra.chat.entity.GroupEntity;
 import com.indra.chat.entity.GroupRoleKey;
 import com.indra.chat.entity.GroupUser;
 import com.indra.chat.repository.GroupUserJoinRepository;
@@ -47,11 +48,10 @@ public class GroupUserJoinService {
         return groupUserJoinRepository.getAllByGroupId(groupId);
     }
 
-    public boolean checkIfUserIsAuthorizedInGroup(int userId, int groupId) {
-        List<Integer> ids = groupUserJoinRepository.getUsersIdInGroup(groupId);
+    public boolean checkIfUserIsAuthorizedInGroup(int userId, GroupEntity group) {
+        List<Integer> ids = groupUserJoinRepository.getUsersIdInGroup(group.getId());
         return ids.stream().noneMatch(id -> id == userId);
     }
-
 
     public GroupUser grantUserAdminInConversation(int userId, int groupId) {
         return executeActionOnGroupUser(userId, groupId, 1);

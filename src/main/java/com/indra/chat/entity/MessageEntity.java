@@ -17,9 +17,10 @@ import java.sql.Timestamp;
 @NoArgsConstructor
 public class MessageEntity {
 
-    public MessageEntity(int userId, int groupId, String type, String message) {
+    public MessageEntity(int userId, GroupEntity group, ConversationEntity conversation, String type, String message) {
         this.user_id = userId;
-        this.group_id = groupId;
+        this.group = group;
+        this.conversation = conversation;
         this.type = type;
         this.message = message;
     }
@@ -30,8 +31,13 @@ public class MessageEntity {
 
     private String message;
 
-    @Column(name = "msg_group_id")
-    private int group_id;
+    @ManyToOne(fetch = FetchType.LAZY, optional = true)
+    @JoinColumn(name = "msg_group_id", nullable = true)
+    private GroupEntity group;
+
+    @ManyToOne(fetch = FetchType.LAZY, optional = true)
+    @JoinColumn(name = "msg_conversation_id", nullable = true)
+    private ConversationEntity conversation;
 
     @Column(name = "msg_user_id")
     private int user_id;

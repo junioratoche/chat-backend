@@ -13,9 +13,9 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
-public class GroupService {
+public class ConversationService {
 
-    private static final Logger log = LoggerFactory.getLogger(GroupService.class);
+    private static final Logger log = LoggerFactory.getLogger(ConversationService.class);
 
     @Autowired
     private GroupRepository groupRepository;
@@ -31,12 +31,11 @@ public class GroupService {
     }
 
     public List<Integer> getAllUsersIdByGroupUrl(String groupUrl) {
-        GroupEntity groupEntity = groupRepository.findGroupByUrl(groupUrl);
-        List<GroupUser> users = groupUserJoinService.findAllByGroupId(groupEntity.getId());
+        GroupEntity groupId = groupRepository.findGroupByUrl(groupUrl);
+        List<GroupUser> users = groupUserJoinService.findAllByGroupId(groupId.getId());
 
         return users.stream().map(GroupUser::getUserId).collect(Collectors.toList());
     }
-
 
     public String getGroupName(String url) {
         return groupRepository.getGroupEntitiesBy(url);
@@ -86,7 +85,7 @@ public class GroupService {
         return savedGroup;
     }
 
-    public Optional<GroupEntity> findById(Integer groupId) {
+    public Optional<GroupEntity> findById(int groupId) {
         return groupRepository.findById(groupId);
     }
 
@@ -103,18 +102,17 @@ public class GroupService {
         GroupUser groupUser1 = new GroupUser();
         groupUser1.setGroupId(savedGroup.getId());
         groupUser1.setUserId(id1);
+
         groupUser1.setRole(0);
         groupUser1.setUserMapping(user1);
         groupUser1.setGroupMapping(groupEntity);
 
         GroupUser groupUser2 = new GroupUser();
-        groupUser2.setGroupId(savedGroup.getId()); // Corrected
-        groupUser2.setUserId(id2); // Corrected
+        groupUser2.setUserId(savedGroup.getId());
+        groupUser2.setGroupId(id2);
         groupUser2.setRole(0);
         groupUser2.setUserMapping(user2);
         groupUser2.setGroupMapping(groupEntity);
-
         groupUserJoinService.saveAll(Arrays.asList(groupUser1, groupUser2));
     }
-
 }

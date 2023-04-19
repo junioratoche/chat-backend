@@ -2,6 +2,7 @@ package com.indra.chat.controller;
 
 import com.indra.chat.dto.MessageDTO;
 import com.indra.chat.dto.OutputTransportDTO;
+import com.indra.chat.entity.GroupEntity;
 import com.indra.chat.entity.MessageEntity;
 import com.indra.chat.service.GroupService;
 import com.indra.chat.service.MessageService;
@@ -18,11 +19,9 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.ArrayList;
 import java.util.List;
 
-/**
- * API controller to handle file upload
- */
 @RestController
 @CrossOrigin
 @RequestMapping("/api")
@@ -45,26 +44,30 @@ public class WsFileController {
     @Autowired
     private UserSeenMessageService seenMessageService;
 
-    /**
-     * Receive file to put in DB and send it back to the group conversation
-     *
-     * @param file     The file to be uploaded
-     * @param userId   int value for user ID sender of the message
-     * @param groupUrl string value for the group URL
-     * @return a {@link ResponseEntity} with HTTP code
-     */
     @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<?> uploadFile(@RequestParam(name = "file") MultipartFile file, @RequestParam(name = "userId") int userId, @RequestParam(name = "groupUrl") String groupUrl) {
-        int groupId = groupService.findGroupByUrl(groupUrl);
+    public ResponseEntity<?> uploadFile(@RequestParam(name = "file") MultipartFile file, @RequestParam(name = "userId") int userId, @RequestParam(name = "chatIdentifier") String chatIdentifier, @RequestParam(name = "isGroupChat") boolean isGroupChat) {
+        int chatId;
+        List<Integer> toSend;
+
+        if (isGroupChat) {
+            GroupEntity group = groupService.findGroupByUrl(chatIdentifier);
+            chatId = group.getId();
+            toSend = messageService.createNotificationList(userId, chatIdentifier);
+        } else {
+            // Asume que hay un método para encontrar el ID de una conversación individual por su identificador (por ejemplo, el ID del otro usuario en el chat)
+            chatId = messageService.findIndividualConversationId(chatIdentifier);
+            toSend = new ArrayList<>();
+            toSend.add(messageService.getOtherUserIdInIndividualChat(chatId, userId));
+        }
+
         try {
-            MessageEntity messageEntity = messageService.createAndSaveMessage(userId, groupId, MessageTypeEnum.FILE.toString(), "have send a file");
+            MessageEntity messageEntity = messageService.createAndSaveMessage(userId, chatId, isGroupChat, MessageTypeEnum.FILE.toString(), "have send a file");
             storageService.store(file, messageEntity.getId());
             OutputTransportDTO res = new OutputTransportDTO();
             MessageDTO messageDTO = messageService.createNotificationMessageDTO(messageEntity, userId);
             res.setAction(TransportActionEnum.NOTIFICATION_MESSAGE);
             res.setObject(messageDTO);
-            seenMessageService.saveMessageNotSeen(messageEntity, groupId);
-            List<Integer> toSend = messageService.createNotificationList(userId, groupUrl);
+            seenMessageService.saveMessageNotSeen(messageEntity, chatId);
             toSend.forEach(toUserId -> messagingTemplate.convertAndSend("/topic/user/" + toUserId, res));
         } catch (Exception e) {
             log.error("Cannot save file, caused by {}", e.getMessage());

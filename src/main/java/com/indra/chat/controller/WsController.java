@@ -2,6 +2,7 @@ package com.indra.chat.controller;
 
 import com.google.gson.Gson;
 import com.indra.chat.dto.*;
+import com.indra.chat.entity.GroupEntity;
 import com.indra.chat.entity.MessageEntity;
 import com.indra.chat.entity.MessageUserEntity;
 import com.indra.chat.service.*;
@@ -71,10 +72,11 @@ public class WsController {
                 break;
             case FETCH_GROUP_MESSAGES:
                 if (!dto.getGroupUrl().equals("")) {
-                    int groupId = groupService.findGroupByUrl(dto.getGroupUrl());
-                    if (dto.getGroupUrl().equals("") || groupUserJoinService.checkIfUserIsAuthorizedInGroup(dto.getUserId(), groupId)) {
+                    GroupEntity groupEntity = groupService.findGroupByUrl(dto.getGroupUrl());
+                    if (dto.getGroupUrl().equals("") || groupUserJoinService.checkIfUserIsAuthorizedInGroup(dto.getUserId(), groupEntity)) {
                         break;
                     }
+
                     WrapperMessageDTO messages = this.getConversationMessage(dto.getGroupUrl(), dto.getMessageId());
                     OutputTransportDTO resMessages = new OutputTransportDTO();
                     if (dto.getMessageId() == -1) {
@@ -88,7 +90,8 @@ public class WsController {
                 break;
             case MARK_MESSAGE_AS_SEEN:
                 if (!"".equals(dto.getGroupUrl())) {
-                    int messageId = messageService.findLastMessageIdByGroupId(groupService.findGroupByUrl(dto.getGroupUrl()));
+                    int groupId = groupService.findGroupByUrl(dto.getGroupUrl()).getId(); // Get the groupId from GroupEntity
+                    int messageId = messageService.findLastMessageIdByGroupId(groupId); // Pass groupId instead of GroupEntity
                     MessageUserEntity messageUserEntity = seenMessageService.findByMessageId(messageId, dto.getUserId());
                     if (messageUserEntity == null) break;
                     messageUserEntity.setSeen(true);
@@ -98,7 +101,8 @@ public class WsController {
             case LEAVE_GROUP:
                 if (!dto.getGroupUrl().equals("")) {
                     log.info("User id {} left group {}", dto.getUserId(), dto.getGroupUrl());
-                    int groupId = groupService.findGroupByUrl(dto.getGroupUrl());
+                    int groupId = groupService.findGroupByUrl(dto.getGroupUrl()).getId();
+
                     groupUserJoinService.removeUserFromConversation(dto.getUserId(), groupId);
 
                     String groupName = groupService.getGroupName(dto.getGroupUrl());
@@ -207,16 +211,20 @@ public class WsController {
      * @param message  the payload received
      */
     public void getAndSaveMessage(int userId, String groupUrl, String message) {
-        int groupId = groupService.findGroupByUrl(groupUrl);
-        if (groupUserJoinService.checkIfUserIsAuthorizedInGroup(userId, groupId)) {
+        GroupEntity group = groupService.findGroupByUrl(groupUrl);
+        if (groupUserJoinService.checkIfUserIsAuthorizedInGroup(userId, group)) { // pass the group object instead of groupId
             return;
         }
-        MessageEntity messageEntity = new MessageEntity(userId, groupId, MessageTypeEnum.TEXT.toString(), message);
+
+        // Change this part to use the constructor instead of the setters
+        // Pass the group object instead of groupId to the constructor
+        MessageEntity messageEntity = new MessageEntity(userId, group, null, MessageTypeEnum.TEXT.toString(), message);
+
         MessageEntity msg = messageService.save(messageEntity);
         List<Integer> toSend = messageService.createNotificationList(userId, groupUrl);
 
         // Save seen message
-        seenMessageService.saveMessageNotSeen(msg, groupId);
+        seenMessageService.saveMessageNotSeen(msg, group.getId()); // Use group.getId() here
         log.debug("Message saved");
         OutputTransportDTO dto = new OutputTransportDTO();
         dto.setAction(TransportActionEnum.NOTIFICATION_MESSAGE);
@@ -226,6 +234,7 @@ public class WsController {
             messagingTemplate.convertAndSend("/topic/user/" + toUserId, dto);
         });
     }
+
 
     @MessageMapping("/message/call/{userId}/group/{groupUrl}")
     @SendTo("/topic/call/reply/{groupUrl}")
@@ -254,15 +263,15 @@ public class WsController {
         WrapperMessageDTO wrapper = new WrapperMessageDTO();
         if (url != null) {
             List<MessageDTO> messageDTOS = new ArrayList<>();
-            int groupId = groupService.findGroupByUrl(url);
-            List<MessageEntity> newMessages = messageService.findByGroupId(groupId, messageId);
+            GroupEntity group = groupService.findGroupByUrl(url);
+            List<MessageEntity> newMessages = messageService.findByGroupId(group.getId(), messageId);
             int lastMessageId = newMessages != null && newMessages.size() != 0 ? newMessages.get(0).getId() : 0;
-            List<MessageEntity> afterMessages = messageService.findByGroupId(groupId, lastMessageId);
+            List<MessageEntity> afterMessages = messageService.findByGroupId(group.getId(), lastMessageId);
             if (newMessages != null) {
                 wrapper.setLastMessage(afterMessages != null && afterMessages.size() == 0);
                 newMessages.forEach(msg ->
                         messageDTOS.add(messageService
-                                .createMessageDTO(msg.getId(), msg.getType(), msg.getUser_id(), msg.getCreatedAt().toString(), msg.getGroup_id(), msg.getMessage()))
+                                .createMessageDTO(msg.getId(), msg.getType(), msg.getUser_id(), msg.getCreatedAt().toString(), msg.getGroup().getId(), msg.getMessage()))
                 );
             }
             wrapper.setMessages(messageDTOS);
@@ -270,4 +279,6 @@ public class WsController {
         }
         return null;
     }
+
+
 }

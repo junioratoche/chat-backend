@@ -2,9 +2,12 @@ package com.indra.chat.service;
 
 import com.indra.chat.dto.MessageDTO;
 import com.indra.chat.dto.NotificationDTO;
+import com.indra.chat.entity.ConversationEntity;
 import com.indra.chat.entity.FileEntity;
 import com.indra.chat.entity.GroupEntity;
 import com.indra.chat.entity.MessageEntity;
+import com.indra.chat.repository.ConversationRepository;
+import com.indra.chat.repository.GroupRepository;
 import com.indra.chat.repository.MessageRepository;
 import com.indra.chat.utils.MessageTypeEnum;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,6 +31,12 @@ public class MessageService {
 
     @Autowired
     private FileService fileService;
+    
+    @Autowired
+    private GroupRepository groupRepository; // Inyecta GroupRepository aquí
+    
+    @Autowired
+    private ConversationRepository conversationRepository; // Inyecta ConversationRepository aquí
 
     private static final String[] colorsArray =
             {
@@ -42,10 +51,21 @@ public class MessageService {
         return colorsArray[new Random().nextInt(colorsArray.length)];
     }
 
-    public MessageEntity createAndSaveMessage(int userId, int groupId, String type, String data) {
-        MessageEntity msg = new MessageEntity(userId, groupId, type, data);
-        return messageRepository.save(msg);
+    public MessageEntity createAndSaveMessage(int userId, int chatId, boolean isGroupChat, String type, String data) {
+        GroupEntity group = null;
+        ConversationEntity conversation = null;
+
+        if (isGroupChat) {
+            group = groupRepository.findById(chatId).orElse(null);
+        } else {
+            conversation = conversationRepository.findById(chatId).orElse(null);
+        }
+
+        MessageEntity messageEntity = new MessageEntity(userId, group, conversation, type, data);
+        return messageRepository.save(messageEntity);
     }
+
+
 
     public void flush() {
         messageRepository.flush();
@@ -109,9 +129,10 @@ public class MessageService {
 
     @Transactional
     public List<Integer> createNotificationList(int userId, String groupUrl) {
-        int groupId = groupService.findGroupByUrl(groupUrl);
+        GroupEntity groupId = groupService.findGroupByUrl(groupUrl);
         List<Integer> toSend = new ArrayList<>();
-        Optional<GroupEntity> optionalGroupEntity = groupService.findById(groupId);
+        Optional<GroupEntity> optionalGroupEntity = groupService.findById(groupId.getId());
+
         if (optionalGroupEntity.isPresent()) {
             GroupEntity groupEntity = optionalGroupEntity.get();
             groupEntity.getUserEntities().forEach(userEntity -> toSend.add(userEntity.getId()));
@@ -120,9 +141,11 @@ public class MessageService {
     }
 
     public NotificationDTO createNotificationDTO(MessageEntity msg) {
-        String groupUrl = groupService.getGroupUrlById(msg.getGroup_id());
+    	int groupId = msg.getGroup().getId();
+        String groupUrl = groupService.getGroupUrlById(groupId);
         NotificationDTO notificationDTO = new NotificationDTO();
-        notificationDTO.setGroupId(msg.getGroup_id());
+//        notificationDTO.setGroupId(msg.getGroup_id());
+        notificationDTO.setGroupId(groupId);
         notificationDTO.setGroupUrl(groupUrl);
         if (msg.getType().equals(MessageTypeEnum.TEXT.toString())) {
             notificationDTO.setType(MessageTypeEnum.TEXT);
@@ -143,7 +166,8 @@ public class MessageService {
     }
 
     public MessageDTO createNotificationMessageDTO(MessageEntity msg, int userId) {
-        String groupUrl = groupService.getGroupUrlById(msg.getGroup_id());
+    	int groupId = msg.getGroup().getId();
+        String groupUrl = groupService.getGroupUrlById(groupId);
         String firstName = userService.findFirstNameById(msg.getUser_id());
         String initials = userService.findUsernameById(msg.getUser_id());
         MessageDTO messageDTO = new MessageDTO();
@@ -156,12 +180,34 @@ public class MessageService {
         messageDTO.setMessage(msg.getMessage());
         messageDTO.setUserId(msg.getUser_id());
         messageDTO.setGroupUrl(groupUrl);
-        messageDTO.setGroupId(msg.getGroup_id());
+        messageDTO.setGroupId(groupId);
         messageDTO.setSender(firstName);
         messageDTO.setTime(msg.getCreatedAt().toString());
         messageDTO.setInitials(createUserInitials(initials));
         messageDTO.setColor(colors.get(msg.getUser_id()));
         messageDTO.setMessageSeen(msg.getUser_id() == userId);
         return messageDTO;
+    }
+    
+    public int findIndividualConversationId(String chatIdentifier) {
+        // Implementa la lógica para encontrar el ID de una conversación individual por su identificador
+        // (por ejemplo, el ID del otro usuario en el chat)
+        // Asume que existe una relación entre chatIdentifier y conversationId
+        int conversationId = conversationRepository.findConversationIdByChatIdentifier(chatIdentifier);
+        return conversationId;
+    }
+
+    public int getOtherUserIdInIndividualChat(int conversationId, int currentUserId) {
+        // Implementa la lógica para obtener el ID del otro usuario en un chat individual
+        // Asume que existe un método en el repositorio que devuelve los IDs de los usuarios en un chat individual
+        List<Integer> userIds = conversationRepository.findUserIdsInConversation(conversationId);
+        int otherUserId = -1;
+        for (int userId : userIds) {
+            if (userId != currentUserId) {
+                otherUserId = userId;
+                break;
+            }
+        }
+        return otherUserId;
     }
 }
