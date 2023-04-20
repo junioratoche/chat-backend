@@ -1,12 +1,15 @@
 package com.indra.chat.service;
 
 import com.indra.chat.dto.GroupMemberDTO;
+import com.indra.chat.dto.user.UserDTO;
 import com.indra.chat.entity.*;
 import com.indra.chat.repository.GroupRepository;
+import com.indra.chat.repository.UserRepository;
 import com.indra.chat.utils.GroupTypeEnum;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.userdetails.User;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
@@ -25,6 +28,25 @@ public class ConversationService {
 
     @Autowired
     private GroupUserJoinService groupUserJoinService;
+    
+    @Autowired
+    private UserRepository userRepository;
+    
+    public List<UserDTO> fetchAllUsers() {
+        List<UserEntity> users = userRepository.findAll();
+        return users.stream().map(this::convertToDto).collect(Collectors.toList());
+    }
+
+    private UserDTO convertToDto(UserEntity user) {
+        UserDTO userDto = new UserDTO();
+        userDto.setId(user.getId());
+        userDto.setFirstName(user.getFirstName());
+        userDto.setLastName(user.getLastName());
+        // Establece otros campos según sea necesario
+        return userDto;
+    }   
+    
+    
 
     public GroupEntity findGroupByUrl(String url) {
         return groupRepository.findGroupByUrl(url);

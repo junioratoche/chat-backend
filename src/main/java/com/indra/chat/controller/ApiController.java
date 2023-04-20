@@ -3,11 +3,13 @@ package com.indra.chat.controller;
 import com.google.gson.Gson;
 import com.indra.chat.dto.AuthenticationUserDTO;
 import com.indra.chat.dto.GroupMemberDTO;
+import com.indra.chat.dto.user.UserDTO;
 import com.indra.chat.entity.GroupEntity;
 import com.indra.chat.entity.GroupRoleKey;
 import com.indra.chat.entity.GroupUser;
 import com.indra.chat.entity.UserEntity;
 import com.indra.chat.mapper.GroupMapper;
+import com.indra.chat.service.ConversationService;
 import com.indra.chat.service.GroupService;
 import com.indra.chat.service.GroupUserJoinService;
 import com.indra.chat.service.UserService;
@@ -23,6 +25,7 @@ import org.springframework.web.util.WebUtils;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping(value = "/api")
@@ -41,6 +44,9 @@ public class ApiController {
 
     @Autowired
     private GroupUserJoinService groupUserJoinService;
+    
+    @Autowired
+    private ConversationService conversationService;
 
     @Autowired
     private JwtUtil jwtUtil;
@@ -63,21 +69,14 @@ public class ApiController {
     }
     
     
-    @GetMapping(value = "/users/all/{conversationUrl}")
-    public List<GroupMemberDTO> fetchAllUsersToAddInConversation(@PathVariable String groupUrl) {
-    	GroupEntity groupEntity = groupService.findGroupByUrl(groupUrl);
-    	int groupId = groupEntity.getId();
+    @GetMapping(value = "/users/all/conversation/{userId}")
+    public List<UserDTO> fetchAllUsersForOneToOneConversation(@PathVariable int userId) {
+        List<UserDTO> allUsers = conversationService.fetchAllUsers();
+        allUsers = allUsers.stream().filter(user -> user.getId() != userId).collect(Collectors.toList());
 
-        GroupRoleKey groupRoleKey = new GroupRoleKey();
-        groupRoleKey.setGroupId(groupId);
-        List<GroupUser> groupUsers = groupUserJoinService.findAllByGroupId(groupId);
-        Object[] objects = groupUsers.stream().map(GroupUser::getUserId).toArray();
-        int[] ids = new int[objects.length];
-        for (int i = 0; i < objects.length; i++) {
-            ids[i] = (int) objects[i];
-        }
-        return userService.fetchAllUsers(ids);
+        return allUsers;
     }
+
 
 
     /**
