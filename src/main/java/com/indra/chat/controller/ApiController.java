@@ -55,6 +55,10 @@ public class ApiController {
     public List<GroupMemberDTO> fetchAllUsersNotInGroup(@PathVariable String groupUrl) {
     	System.out.println(groupUrl);
     	GroupEntity groupEntity = groupService.findGroupByUrl(groupUrl);
+    	if (groupEntity == null) {
+    	    // Maneja la situación en la que groupEntity es nulo, por ejemplo, lanzando una excepción o registrando un mensaje de error
+    	    throw new RuntimeException("No se encontró un grupo con la URL especificada: " + groupUrl);
+    	}
     	int groupId = groupEntity.getId();
 
         GroupRoleKey groupRoleKey = new GroupRoleKey();
