@@ -4,10 +4,13 @@ import com.google.gson.Gson;
 import com.indra.chat.dto.*;
 import com.indra.chat.dto.user.GroupDTO;
 import com.indra.chat.dto.user.InitUserDTO;
+import com.indra.chat.entity.ConversationEntity;
 import com.indra.chat.entity.GroupEntity;
 import com.indra.chat.entity.UserEntity;
+import com.indra.chat.mapper.ConversationMapper;
 import com.indra.chat.mapper.GroupMapper;
 import com.indra.chat.mapper.UserMapper;
+import com.indra.chat.service.ConversationService;
 import com.indra.chat.service.CustomUserDetailsService;
 import com.indra.chat.service.GroupService;
 import com.indra.chat.service.UserService;
@@ -51,6 +54,12 @@ public class AuthenticationController {
 
     @Autowired
     private GroupMapper groupMapper;
+    
+    @Autowired
+    private ConversationMapper conversationMapper;
+    
+    @Autowired
+    private ConversationService conversationService;
 
     @PostMapping(value = "/auth")
     public AuthUserDTO createAuthenticationToken(@RequestBody JwtDTO authenticationRequest, HttpServletResponse response) throws Exception {
@@ -109,6 +118,14 @@ public class AuthenticationController {
         GroupEntity groupEntity = groupService.createGroup(user.getId(), groupDTO.getName());
         return groupMapper.toGroupDTO(groupEntity, user.getId());
     }
+    
+    @PostMapping(value = "/create/conversation/{user1_id}/{user2_id}")
+    public ConversationDTO createConversationChat(@PathVariable int user1_id, @PathVariable int user2_id) {
+        ConversationEntity conversationEntity = conversationService.createConversation(user1_id, user2_id);
+        return conversationMapper.toConversationDTO(conversationEntity);
+    }
+
+
 
     private UserEntity getUserEntity(HttpServletRequest request) {
         String username;

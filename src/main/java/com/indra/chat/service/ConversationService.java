@@ -3,6 +3,8 @@ package com.indra.chat.service;
 import com.indra.chat.dto.GroupMemberDTO;
 import com.indra.chat.dto.user.UserDTO;
 import com.indra.chat.entity.*;
+import com.indra.chat.mapper.ConversationMapper;
+import com.indra.chat.repository.ConversationRepository;
 import com.indra.chat.repository.GroupRepository;
 import com.indra.chat.repository.UserRepository;
 import com.indra.chat.utils.GroupTypeEnum;
@@ -31,6 +33,9 @@ public class ConversationService {
     
     @Autowired
     private UserRepository userRepository;
+    
+    @Autowired
+    private ConversationRepository conversationRepository;
     
     public List<UserDTO> fetchAllUsers() {
         List<UserEntity> users = userRepository.findAll();
@@ -110,31 +115,18 @@ public class ConversationService {
     public Optional<GroupEntity> findById(int groupId) {
         return groupRepository.findById(groupId);
     }
+    
+    
+    public ConversationEntity createConversation(int user1_id, int user2_id) {
+        UserEntity user1 = userService.findById(user1_id);
+        UserEntity user2 = userService.findById(user2_id);
 
-    public void createConversation(int id1, int id2) {
-        GroupEntity groupEntity = new GroupEntity();
-        groupEntity.setName(null);
-        groupEntity.setUrl(UUID.randomUUID().toString());
-        groupEntity.setGroupTypeEnum(GroupTypeEnum.SINGLE);
-        GroupEntity savedGroup = groupRepository.save(groupEntity);
+        String chatIdentifier = UUID.randomUUID().toString();
+        ConversationEntity conversationEntity = new ConversationEntity();
+        conversationEntity.setUser1(user1);
+        conversationEntity.setUser2(user2);
+        conversationEntity.setChatIdentifier(chatIdentifier);
 
-        UserEntity user1 = userService.findById(id1);
-        UserEntity user2 = userService.findById(id2);
-
-        GroupUser groupUser1 = new GroupUser();
-        groupUser1.setGroupId(savedGroup.getId());
-        groupUser1.setUserId(id1);
-
-        groupUser1.setRole(0);
-        groupUser1.setUserMapping(user1);
-        groupUser1.setGroupMapping(groupEntity);
-
-        GroupUser groupUser2 = new GroupUser();
-        groupUser2.setUserId(savedGroup.getId());
-        groupUser2.setGroupId(id2);
-        groupUser2.setRole(0);
-        groupUser2.setUserMapping(user2);
-        groupUser2.setGroupMapping(groupEntity);
-        groupUserJoinService.saveAll(Arrays.asList(groupUser1, groupUser2));
+        return conversationRepository.save(conversationEntity);
     }
 }
