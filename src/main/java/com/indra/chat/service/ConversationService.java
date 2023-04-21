@@ -125,7 +125,7 @@ public class ConversationService {
         ConversationEntity conversationEntity = new ConversationEntity();
         conversationEntity.setUser1(user1);
         conversationEntity.setUser2(user2);
-        conversationEntity.setChatIdentifier(chatIdentifier);
+        conversationEntity.setUrl(chatIdentifier);
 
         return conversationRepository.save(conversationEntity);
     }

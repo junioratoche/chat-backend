@@ -16,7 +16,8 @@ import java.util.HashSet;
 import java.util.Set;
 
 @Entity
-@Table(name = "conversation")
+@Table(name = "chat_conversation")
+//@Table(name = "conversation")
 @Getter
 @Setter
 @AllArgsConstructor
@@ -46,8 +47,8 @@ public class ConversationEntity implements Serializable {
     @CreationTimestamp
     private Timestamp createdAt;
     
-    @Column(name = "chat_identifier")
-    private String chatIdentifier;
+    @Column(name = "url")
+    private String url;
 
     @OneToMany(mappedBy = "conversation", fetch = FetchType.LAZY)
     @JsonIgnore
