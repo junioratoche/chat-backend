@@ -3,7 +3,6 @@ package com.indra.chat.service;
 import com.indra.chat.dto.GroupMemberDTO;
 import com.indra.chat.dto.user.UserDTO;
 import com.indra.chat.entity.*;
-import com.indra.chat.mapper.ConversationMapper;
 import com.indra.chat.repository.ConversationRepository;
 import com.indra.chat.repository.GroupRepository;
 import com.indra.chat.repository.UserRepository;
@@ -11,7 +10,6 @@ import com.indra.chat.utils.GroupTypeEnum;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.core.userdetails.User;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
@@ -125,7 +123,7 @@ public class ConversationService {
         ConversationEntity conversationEntity = new ConversationEntity();
         conversationEntity.setUser1(user1);
         conversationEntity.setUser2(user2);
-        conversationEntity.setUrl(chatIdentifier);
+        conversationEntity.setChatIdentifier(chatIdentifier);
 
         return conversationRepository.save(conversationEntity);
     }

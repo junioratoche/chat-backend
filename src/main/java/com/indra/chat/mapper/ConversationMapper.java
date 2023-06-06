@@ -20,7 +20,7 @@ public class ConversationMapper {
         UserEntity user2 = conversationEntity.getUser2();
 
         conversationDTO.setId(conversationEntity.getId());
-        conversationDTO.setChatIdentifier(conversationEntity.getUrl());
+        conversationDTO.setChatIdentifier(conversationEntity.getChatIdentifier());
         conversationDTO.setCreatedAt(conversationEntity.getCreatedAt());
 
         conversationDTO.setUser1Id(user1.getId());

@@ -47,8 +47,8 @@ public class ConversationEntity implements Serializable {
     @CreationTimestamp
     private Timestamp createdAt;
     
-    @Column(name = "url")
-    private String url;
+    @Column(name = "chat_identifier")
+    private String chatIdentifier;
 
     @OneToMany(mappedBy = "conversation", fetch = FetchType.LAZY)
     @JsonIgnore
