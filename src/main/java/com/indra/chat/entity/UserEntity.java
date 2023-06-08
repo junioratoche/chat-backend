@@ -12,7 +12,7 @@ import java.io.Serializable;
 import java.util.*;
 
 @Entity
-@Table(name = "user")
+@Table(name = "users")
 @Getter
 @Setter
 @AllArgsConstructor
